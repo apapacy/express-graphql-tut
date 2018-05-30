@@ -48,11 +48,11 @@ const Book =  mongoose.model('Book', bookSchema)
 const BookAuthor =  mongoose.model('BookAuthor', bookAuthorSchema)
 
 
-
-const BookType = new graphql.GraphQLObjectType({
+let BookType, AuthorType
+BookType = new graphql.GraphQLObjectType({
   name: 'book',
   description: 'a book',
-  fields: {
+  fields: () => ({
     _id: {type: graphql.GraphQLString},
     title: {
       type: graphql.GraphQLString,
@@ -60,13 +60,21 @@ const BookType = new graphql.GraphQLObjectType({
         return obj.title;
       }
     },
-  }
+    authors: {
+      type: new graphql.GraphQLList(AuthorType),
+      resolve: (obj) => {
+        return obj.authors && obj.authors.map(async (author) => {
+          return author.author
+        });
+      }
+    }
+  })
 })
 
-const AuthorType = new graphql.GraphQLObjectType({
+AuthorType = new graphql.GraphQLObjectType({
   name: 'author',
   description: 'the author',
-  fields: {
+  fields: () => ({
     _id: {type: graphql.GraphQLString},
     name: {
       type: graphql.GraphQLString,
@@ -77,12 +85,12 @@ const AuthorType = new graphql.GraphQLObjectType({
     books: {
       type: new graphql.GraphQLList(BookType),
       resolve: (obj) => {
-        return obj.books.map(async (book) => {
+        return obj.books && obj.books.map(async (book) => {
           return book.book
         });
       }
     }
-  }
+  })
 })
 
 
@@ -104,7 +112,21 @@ const query = new graphql.GraphQLObjectType({
           .populate({path: 'books', populate: {path: 'book'}})
           .exec();
       }
-    }
+    },
+    book: {
+      type: new graphql.GraphQLList(BookType),
+      args: {
+        _id: {
+          type: graphql.GraphQLString
+        }
+      },
+      resolve: (_, {_id}) => {
+        const where = _id ? {_id} : {};
+        return Book.find(where)
+          .populate({path: 'authors', populate: {path: 'author'}})
+          .exec();
+      }
+    },
   }
 })
 
