@@ -20,7 +20,12 @@ const TodoType = new graphql.GraphQLObjectType({
   description: 'a todo item',
   fields: {
     _id: {type: graphql.GraphQLString},
-    content: {type: graphql.GraphQLString},
+    content: {
+      type: graphql.GraphQLString,
+      resolve: () => {
+        return 'Тест и тест';
+      }
+    },
     done: {type: graphql.GraphQLBoolean}
   }
 })
