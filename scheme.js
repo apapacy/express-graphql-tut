@@ -1,28 +1,25 @@
 const graphql = require('graphql')
+require('dotenv').config()
+const mongoose = require('mongoose')
 
-const fakeDatabase = {};
+mongoose.connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_NAME}`)
 
-class Todo {
-  /**
-  * Todo constructor
-  * @param {String} content Text that describes the task to do
-  */
-  constructor(content) {
-    this.id = ++Todo.counter;
-    this.content = content;
-    this.done = false;
-  }
-}
+const Schema = mongoose.Schema
 
-// counter of instances
-Todo.counter = 0;
+const todoSchema = new Schema({
+  content: String,
+  done: Boolean
+})
+
+const Todo =  mongoose.model('Todo', todoSchema)
+
 
 // define the Todo type for graphql
 const TodoType = new graphql.GraphQLObjectType({
   name: 'todo',
   description: 'a todo item',
   fields: {
-    id: {type: graphql.GraphQLInt},
+    _id: {type: graphql.GraphQLString},
     content: {type: graphql.GraphQLString},
     done: {type: graphql.GraphQLBoolean}
   }
@@ -35,15 +32,13 @@ const query = new graphql.GraphQLObjectType({
     todo: {
       type: new graphql.GraphQLList(TodoType),
       args: {
-        id: {
-          type: graphql.GraphQLInt
+        _id: {
+          type: graphql.GraphQLString
         }
       },
-      resolve: (_, {id}) => {
-      console.log(arguments);
-        if (id)
-          return [fakeDatabase[id]];
-        return Object.values(fakeDatabase);
+      resolve: (_, {_id}) => {
+        const where = _id ? {_id} : {};
+        return Todo.find(where);
       }
     }
   }
@@ -56,40 +51,41 @@ const mutation = new graphql.GraphQLObjectType({
   name: 'TodoMutation',
   fields: {
     createTodo: {
-      type: new graphql.GraphQLList(TodoType),
+      type: TodoType,
       args: {
         content: {
           type: new graphql.GraphQLNonNull(graphql.GraphQLString)
         }
       },
       resolve: (_, {content}) => {
-        const newTodo = new Todo(content);
-        fakeDatabase[newTodo.id] = newTodo;
-        return Object.values(fakeDatabase);
+        const newTodo = new Todo({content, done: false});
+        return newTodo.save()
       }
     },
     checkTodo: {
       type: new graphql.GraphQLList(TodoType),
       args: {
-        id: {
-          type: new graphql.GraphQLNonNull(graphql.GraphQLInt)
+        _id: {
+          type: new graphql.GraphQLNonNull(graphql.GraphQLString)
         }
       },
-      resolve: (_, {id}) => {
-        fakeDatabase[id].done = true;
-        return Object.values(fakeDatabase);
+      resolve: (_, {_id}) => {
+        return Todo.findById(_id)
+        .then(todo => {
+          todo.done = true;
+          return todo.save();
+        });
       }
     },
     deleteTodo: {
       type: new graphql.GraphQLList(TodoType),
       args: {
-        id: {
-          type: new graphql.GraphQLNonNull(graphql.GraphQLInt)
+        _id: {
+          type: new graphql.GraphQLNonNull(graphql.GraphQLString)
         }
       },
-      resolve: (_, {id}) => {
-        delete fakeDatabase[id];
-        return Object.values(fakeDatabase);
+      resolve: (_, {_id}) => {
+        return Todo.findOneAndRemove(_id)
       }
     }
   }
