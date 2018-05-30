@@ -6,36 +6,93 @@ mongoose.connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_NAME}`)
 
 const Schema = mongoose.Schema
 
-const todoSchema = new Schema({
-  content: String,
-  done: Boolean
-})
+const authorSchema = new Schema({
+  name: String
+}, {
+  toJSON: {
+    virtuals: true
+  }
+});
 
-const Todo =  mongoose.model('Todo', todoSchema)
+authorSchema.virtual('books', {
+  ref: 'BookAuthor',
+  localField: '_id',
+  foreignField: 'author'
+});
 
+const bookSchema = new Schema({
+  title: String
+}, {
+  toJSON: {
+    virtuals: true
+  }
+});
 
-// define the Todo type for graphql
-const TodoType = new graphql.GraphQLObjectType({
-  name: 'todo',
-  description: 'a todo item',
-  fields: {
-    _id: {type: graphql.GraphQLString},
-    content: {
-      type: graphql.GraphQLString,
-      resolve: () => {
-        return 'Тест и тест';
-      }
-    },
-    done: {type: graphql.GraphQLBoolean}
+bookSchema.virtual('authors', {
+  ref: 'BookAuthor',
+  localField: '_id',
+  foreignField: 'book'
+});
+
+const bookAuthorSchema = new Schema({
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'Author' },
+  book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' }
+}, {
+  toJSON: {
+    virtuals: true
   }
 })
+
+const Author =  mongoose.model('Author', authorSchema)
+const Book =  mongoose.model('Book', bookSchema)
+const BookAuthor =  mongoose.model('BookAuthor', bookAuthorSchema)
+
+
+
+const BookType = new graphql.GraphQLObjectType({
+  name: 'book',
+  description: 'a book',
+  fields: {
+    _id: {type: graphql.GraphQLString},
+    title: {
+      type: graphql.GraphQLString,
+      resolve: (obj) => {
+        return obj.title;
+      }
+    },
+  }
+})
+
+const AuthorType = new graphql.GraphQLObjectType({
+  name: 'author',
+  description: 'the author',
+  fields: {
+    _id: {type: graphql.GraphQLString},
+    name: {
+      type: graphql.GraphQLString,
+      resolve: (obj) => {
+        return obj.name;
+      }
+    },
+    books: {
+      type: new graphql.GraphQLList(BookType),
+      resolve: (obj) => {
+        return obj.books.map(async (book) => {
+          return book.book
+        });
+      }
+    }
+  }
+})
+
+
 
 // define the queries of the graphql Schema
 const query = new graphql.GraphQLObjectType({
   name: 'TodoQuery',
   fields: {
-    todo: {
-      type: new graphql.GraphQLList(TodoType),
+    author: {
+      type: new graphql.GraphQLList(AuthorType),
       args: {
         _id: {
           type: graphql.GraphQLString
@@ -43,7 +100,9 @@ const query = new graphql.GraphQLObjectType({
       },
       resolve: (_, {_id}) => {
         const where = _id ? {_id} : {};
-        return Todo.find(where);
+        return Author.find(where)
+          .populate({path: 'books', populate: {path: 'book'}})
+          .exec();
       }
     }
   }
@@ -55,44 +114,39 @@ const query = new graphql.GraphQLObjectType({
 const mutation = new graphql.GraphQLObjectType({
   name: 'TodoMutation',
   fields: {
-    createTodo: {
-      type: TodoType,
+    createAuthor: {
+      type: AuthorType,
       args: {
-        content: {
+        name: {
           type: new graphql.GraphQLNonNull(graphql.GraphQLString)
         }
       },
-      resolve: (_, {content}) => {
-        const newTodo = new Todo({content, done: false});
-        return newTodo.save()
+      resolve: (_, {name}) => {
+        const newAuthor = new Author({name});
+        return newAuthor.save()
       }
     },
-    checkTodo: {
-      type: new graphql.GraphQLList(TodoType),
+    createBook: {
+      type: BookType,
       args: {
-        _id: {
+        title: {
           type: new graphql.GraphQLNonNull(graphql.GraphQLString)
+        },
+        authors: {
+          type: new graphql.GraphQLNonNull(graphql.GraphQLList(graphql.GraphQLString))
         }
       },
-      resolve: (_, {_id}) => {
-        return Todo.findById(_id)
-        .then(todo => {
-          todo.done = true;
-          return todo.save();
-        });
+      resolve: async(_, {title, authors}) => {
+        const book = new Book({title});
+        await book.save()
+        for (let i = 0; i < authors.length; i++) {
+          const author = await Author.findOne({name: authors[i]});
+          const bookAuthor = new BookAuthor({author, book})
+          await bookAuthor.save();
+        }
+        return book;
       }
     },
-    deleteTodo: {
-      type: new graphql.GraphQLList(TodoType),
-      args: {
-        _id: {
-          type: new graphql.GraphQLNonNull(graphql.GraphQLString)
-        }
-      },
-      resolve: (_, {_id}) => {
-        return Todo.findOneAndRemove(_id)
-      }
-    }
   }
 })
 // creates and exports the GraphQL Schema
