@@ -8,10 +8,13 @@
     "express-graphql": "^0.6.12",
     "graphql": "^0.13.2",
     "graphql-list-fields": "^2.0.2",
-    "mongoose": "^5.1.3"
+    "mongoose": "^5.1.3",
+    "nodemon": "^1.17.5",
+    "save": "^2.3.2"
   },
   "devDependencies": {},
   "scripts": {
+    "start": "nodemon",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

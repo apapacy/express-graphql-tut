@@ -4,28 +4,6 @@ const mongoSchema = require('./mongoSchema');
 let BookType;
 let AuthorType;
 
-BookType = new graphql.GraphQLObjectType({
-  name: 'book',
-  description: 'Книги',
-  fields: () => ({
-    _id: {type: graphql.GraphQLString},
-    title: {
-      type: graphql.GraphQLString,
-      resolve: (obj) => {
-        return obj.title;
-      }
-    },
-    authors: {
-      type: new graphql.GraphQLList(AuthorType),
-      resolve: (obj) => {
-        return obj.authors && obj.authors.map(async (author) => {
-          return author.author
-        });
-      }
-    }
-  })
-});
-
 AuthorType = new graphql.GraphQLObjectType({
   name: 'author',
   description: 'Авторы',
@@ -46,6 +24,28 @@ AuthorType = new graphql.GraphQLObjectType({
       }
     }
   })
+});
+
+BookType = new graphql.GraphQLObjectType({
+  name: 'book',
+  description: 'Книги',
+  fields: {
+    _id: {type: graphql.GraphQLString},
+    title: {
+      type: graphql.GraphQLString,
+      resolve: (obj) => {
+        return obj.title;
+      }
+    },
+    authors: {
+      type: new graphql.GraphQLList(AuthorType),
+      resolve: (obj) => {
+        return obj.authors && obj.authors.map(async (author) => {
+          return author.author
+        });
+      }
+    }
+  }
 });
 
 const query = new graphql.GraphQLObjectType({
