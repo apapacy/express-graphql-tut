@@ -1,58 +1,13 @@
 const graphql = require('graphql')
 const getFieldNames = require('graphql-list-fields');
 const mongoSchema = require('./mongoSchema');
-let BookType;
-let AuthorType;
-
-AuthorType = new graphql.GraphQLObjectType({
-  name: 'author',
-  description: 'Авторы',
-  fields: () => ({
-    _id: {type: graphql.GraphQLString},
-    name: {
-      type: graphql.GraphQLString,
-      resolve: (obj) => {
-        return obj.name;
-      }
-    },
-    books: {
-      type: new graphql.GraphQLList(BookType),
-      resolve: (obj) => {
-        return obj.books && obj.books.map(async (book) => {
-          return book.book
-        });
-      }
-    }
-  })
-});
-
-BookType = new graphql.GraphQLObjectType({
-  name: 'book',
-  description: 'Книги',
-  fields: {
-    _id: {type: graphql.GraphQLString},
-    title: {
-      type: graphql.GraphQLString,
-      resolve: (obj) => {
-        return obj.title;
-      }
-    },
-    authors: {
-      type: new graphql.GraphQLList(AuthorType),
-      resolve: (obj) => {
-        return obj.authors && obj.authors.map(async (author) => {
-          return author.author
-        });
-      }
-    }
-  }
-});
+const graphqlType = require('./graphqlType');
 
 const query = new graphql.GraphQLObjectType({
   name: 'Query',
   fields: {
     author: {
-      type: new graphql.GraphQLList(AuthorType),
+      type: new graphql.GraphQLList(graphqlType.Author),
       args: {
         _id: {
           type: graphql.GraphQLString
@@ -77,7 +32,7 @@ const query = new graphql.GraphQLObjectType({
       }
     },
     book: {
-      type: new graphql.GraphQLList(BookType),
+      type: new graphql.GraphQLList(graphqlType.Book),
       args: {
         _id: {
           type: graphql.GraphQLString
@@ -108,7 +63,7 @@ const mutation = new graphql.GraphQLObjectType({
   name: 'Mutation',
   fields: {
     createAuthor: {
-      type: AuthorType,
+      type: graphqlType.Author,
       args: {
         name: {
           type: new graphql.GraphQLNonNull(graphql.GraphQLString)
@@ -120,7 +75,7 @@ const mutation = new graphql.GraphQLObjectType({
       }
     },
     createBook: {
-      type: BookType,
+      type: graphqlType.Book,
       args: {
         title: {
           type: new graphql.GraphQLNonNull(graphql.GraphQLString)
