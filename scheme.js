@@ -1,7 +1,7 @@
 const graphql = require('graphql')
 require('dotenv').config()
 const mongoose = require('mongoose')
-
+const getFieldNames = require('graphql-list-fields');
 mongoose.connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_NAME}`)
 
 const Schema = mongoose.Schema
@@ -120,11 +120,23 @@ const query = new graphql.GraphQLObjectType({
           type: graphql.GraphQLString
         }
       },
-      resolve: (_, {_id}) => {
+      resolve: (_, {_id}, context, info) => {
+        const fields = getFieldNames(info);
+        console.log(fields)
         const where = _id ? {_id} : {};
-        return Book.find(where)
-          .populate({path: 'authors', populate: {path: 'author'}})
-          .exec();
+        const books = Book.find(where)
+        if (fields.indexOf('authors.books.title') > -1 ) {
+          books.populate({
+            path: 'authors',
+            populate: {
+              path: 'author',
+              populate: {path: 'books', populate: {path: 'book'}}
+            }
+          })
+        } else if (fields.indexOf('authors.name') > -1 ) {
+          books.populate({path: 'authors', populate: {path: 'author'}})
+        }
+        return books.exec();
       }
     },
   }
