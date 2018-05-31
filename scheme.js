@@ -2,7 +2,8 @@ const graphql = require('graphql')
 require('dotenv').config()
 const mongoose = require('mongoose')
 const getFieldNames = require('graphql-list-fields');
-mongoose.connect(`mongodb://${process.env.DB_HOST}/${process.env.DB_NAME}`)
+mongoose.connect('mongodb://localhost:27017/todolist')
+mongoose.set('debug', true);
 
 const Schema = mongoose.Schema
 
