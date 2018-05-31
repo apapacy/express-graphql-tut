@@ -8,17 +8,10 @@ module.exports = new graphql.GraphQLObjectType({
     _id: {type: graphql.GraphQLString},
     title: {
       type: graphql.GraphQLString,
-      resolve: (obj) => {
-        return obj.title;
-      }
     },
     authors: {
       type: new graphql.GraphQLList(graphqlType.Author),
-      resolve: (obj) => {
-        return obj.authors && obj.authors.map(async (author) => {
-          return author.author
-        });
-      }
+      resolve: obj => obj.authors && obj.authors.map(author => author.author)
     }
   })
 });
