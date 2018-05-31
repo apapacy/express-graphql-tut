@@ -106,11 +106,22 @@ const query = new graphql.GraphQLObjectType({
           type: graphql.GraphQLString
         }
       },
-      resolve: (_, {_id}) => {
+      resolve: (_, {_id}, context, info) => {
+        const fields = getFieldNames(info);
         const where = _id ? {_id} : {};
-        return Author.find(where)
-          .populate({path: 'books', populate: {path: 'book'}})
-          .exec();
+        const authors = Author.find(where)
+        if (fields.indexOf('books.authors.name') > -1 ) {
+          authors.populate({
+            path: 'books',
+            populate: {
+              path: 'book',
+              populate: {path: 'authors', populate: {path: 'author'}}
+            }
+          })
+        } else if (fields.indexOf('books.title') > -1 ) {
+          authors.populate({path: 'books', populate: {path: 'book'}})
+        }
+        return authors.exec();
       }
     },
     book: {
@@ -122,7 +133,6 @@ const query = new graphql.GraphQLObjectType({
       },
       resolve: (_, {_id}, context, info) => {
         const fields = getFieldNames(info);
-        console.log(fields)
         const where = _id ? {_id} : {};
         const books = Book.find(where)
         if (fields.indexOf('authors.books.title') > -1 ) {
