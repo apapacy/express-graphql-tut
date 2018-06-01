@@ -1,7 +1,7 @@
 const graphql = require('graphql');
-const getFieldNames = require('graphql-list-fields');
 const graphqlType = require('../graphqlType');
 const mongoSchema = require('../mongoSchema');
+const dataLoader = require('./dataLoader');
 
 module.exports = {
   type: new graphql.GraphQLList(graphqlType.Books),
@@ -11,9 +11,8 @@ module.exports = {
     }
   },
   resolve: (_, {_id}, context, info) => {
-    const fields = getFieldNames(info);
+    context.dataLoader = dataLoader();
     const where = _id ? {_id} : {};
-    const books = mongoSchema.Book.find(where)
-    return books.exec();
+    return mongoSchema.Book.find(where).exec();
   }
 };
