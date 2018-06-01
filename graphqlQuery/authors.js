@@ -13,7 +13,7 @@ module.exports = {
   resolve: (_, {_id}, context, info) => {
     const fields = getFieldNames(info);
     const where = _id ? {_id} : {};
-    const authors = mongoSchema.Author.find(where)
+    const authors = mongoSchema.Author.find(where).populate('books')
     return authors.exec();
   }
 };

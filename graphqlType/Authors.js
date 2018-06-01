@@ -1,8 +1,17 @@
 const graphql = require('graphql')
+const DataLoader = require('dataloader')
 const graphqlType = require('./index')
+const mongoSchema = require('../mongoSchema');
+
+const bookLoader = new DataLoader(async ids => {
+  console.log('***************', ids)
+  const promise = [];
+  ids.map(id => promise.push(mongoSchema.Book.findOne({ _id: id })))
+  return promise
+});
 
 module.exports = new graphql.GraphQLObjectType({
-  name: 'author',
+  name: 'authors',
   description: 'Авторы',
   fields: () => ({
     _id: {type: graphql.GraphQLString},
@@ -11,7 +20,7 @@ module.exports = new graphql.GraphQLObjectType({
     },
     books: {
       type: new graphql.GraphQLList(graphqlType.Books),
-      resolve: obj => obj.books && obj.books.map(book => book.book)
+      resolve: obj => obj.books && obj.books.map(book => bookLoader.load(book.book))
     }
   })
 });

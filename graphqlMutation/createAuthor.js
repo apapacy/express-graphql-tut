@@ -4,7 +4,7 @@ const graphqlType = require('../graphqlType');
 const mongoSchema = require('../mongoSchema');
 
 module.exports = {
-  type: graphqlType.Author,
+  type: graphqlType.Authors,
   args: {
     name: {
       type: new graphql.GraphQLNonNull(graphql.GraphQLString)

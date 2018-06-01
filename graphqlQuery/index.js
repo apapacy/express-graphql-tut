@@ -1,6 +1,6 @@
 const graphql = require('graphql');
-const author = require('./author');
-const book = require('./book');
+// const author = require('./author');
+// const book = require('./book');
 const authors = require('./authors');
 const books = require('./books');
 
@@ -8,8 +8,8 @@ const books = require('./books');
 module.exports = new graphql.GraphQLObjectType({
   name: 'Query',
   fields: {
-    author,
-    book,
+    // author,
+    // book,
     authors,
     books,
   }
