@@ -4,10 +4,10 @@ const graphqlType = require('./index')
 const mongoSchema = require('../mongoSchema');
 
 const bookLoader = new DataLoader(async ids => {
-  console.log('***************', ids)
-  const promise = [];
-  ids.map(id => promise.push(mongoSchema.Book.findOne({ _id: id })))
-  return promise
+  const data = await mongoSchema.Book.find({ _id: { $in: ids }}).populate('authors').exec();
+  const books = data.reduce((obj, item) => (obj[item._id] = item) && obj, {})
+  const response = ids.map(id => books[id]);
+  return response;
 });
 
 module.exports = new graphql.GraphQLObjectType({
